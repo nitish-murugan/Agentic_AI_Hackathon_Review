@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra-Advanced Warehouse AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1e1e3f 0%, #2d2d5a 100%);
+            border-right: 1px solid #333366;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 10px;
+        }
+
+        .quick-actions {
+            margin-bottom: 30px;
+        }
+
+        .quick-actions h3 {
+            color: #ffaa00;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #4a4a8a 0%, #6666aa 100%);
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .action-btn:hover {
+            background: linear-gradient(135deg, #5a5a9a 0%, #7777bb 100%);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(102, 102, 170, 0.3);
+        }
+
+        .system-status {
+            margin-top: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid #333366;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            display: inline-block;
+            margin-left: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, #1a1a3a 0%, #2a2a4a 100%);
+        }
+
+        .chat-header {
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #2a2a5a 0%, #3a3a6a 100%);
+            border-bottom: 1px solid #444477;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00d4ff 0%, #ffaa00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .processing-indicator {
+            display: none;
+            align-items: center;
+            color: #ffaa00;
+            font-size: 14px;
+        }
+
+        .processing-indicator.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffaa00;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 18px 24px;
+            border-radius: 18px;
+            line-height: 1.6;
+            font-size: 15px;
+            position: relative;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: white;
+            border-bottom-right-radius: 8px;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #3a3a6a 0%, #4a4a7a 100%);
+            color: #e0e0e0;
+            border: 1px solid #555588;
+            border-bottom-left-radius: 8px;
+        }
+
+        .message .timestamp {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #3a3a6a 0%, #4a4a7a 100%);
+            border-radius: 18px;
+            border-bottom-left-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00d4ff;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            30% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .chat-input-container {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #2a2a5a 0%, #3a3a6a 100%);
+            border-top: 1px solid #444477;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            max-width: 100%;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #555588;
+            border-radius: 15px;
+            padding: 15px 20px;
+            color: #e0e0e0;
+            font-size: 15px;
+            resize: none;
+            max-height: 120px;
+            min-height: 50px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .chat-input::placeholder {
+            color: #888;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #00bfff 0%, #007acc 100%);
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .send-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff4444 0%, #cc3333 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #ff6666;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .suggestion-chip {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(0, 212, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .message-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .confidence-indicator {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border-radius: 3px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .container {
+                max-width: 100%;
+            }
+            
+            .chat-header {
+                padding: 15px 20px;
+            }
+            
+            .chat-messages {
+                padding: 20px;
+            }
+            
+            .chat-input-container {
+                padding: 20px;
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>🤖 AI Assistant</h2>
+            
+            <div class="quick-actions">
+                <h3>Quick Actions</h3>
+                <button class="action-btn" onclick="sendMessage('What are the top selling products?')">
+                    🏆 Top Sellers
+                </button>
+                <button class="action-btn" onclick="sendMessage('Show me low stock alerts')">
+                    📦 Low Stock Alerts
+                </button>
+                <button class="action-btn" onclick="sendMessage('I have 1000 units to distribute')">
+                    🚚 Distribution Plan
+                </button>
+                <button class="action-btn" onclick="sendMessage('Predict demand for next month')">
+                    📈 Demand Forecast
+                </button>
+                <button class="action-btn" onclick="sendMessage('Analyze city performance')">
+                    🏙️ City Analysis
+                </button>
+                <button class="action-btn" onclick="sendMessage('Tell me about product 561099')">
+                    🔍 Product Analysis
+                </button>
+            </div>
+            
+            <div class="system-status">
+                <h3 style="color: #ffaa00; font-size: 12px; margin-bottom: 10px;">System Status</h3>
+                <div class="status-item">
+                    <span>NLP Engine</span>
+                    <span>Online <span class="status-indicator"></span></span>
+                </div>
+                <div class="status-item">
+                    <span>Queue</span>
+                    <span id="queue-status">Ready</span>
+                </div>
+                <div class="status-item">
+                    <span>Performance</span>
+                    <span>Optimal</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-chat">
+            <div class="chat-header">
+                <h1 class="chat-title">Ultra-Advanced Warehouse AI</h1>
+                <div class="processing-indicator" id="processingIndicator">
+                    <div class="spinner"></div>
+                    <span>Processing request...</span>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-content">
+🌟 **Welcome to the Ultra-Advanced Warehouse AI Assistant!**
+
+I'm your intelligent warehouse management companion with enhanced capabilities:
+
+• **🏆 Top Seller Analysis** - Identify best-performing products
+• **📦 Smart Inventory Management** - Real-time stock monitoring
+• **🚚 Optimized Distribution** - AI-powered allocation strategies  
+• **📈 Demand Forecasting** - Predictive analytics for planning
+• **🏙️ City Performance** - Location-based insights
+• **🔍 Product Intelligence** - Deep product-specific analysis
+
+**Enhanced Features:**
+✅ High-accuracy NLP with advanced entity recognition
+✅ Lightning-fast response times with optimized streaming
+✅ Smart request queuing to prevent conflicts
+✅ Comprehensive project knowledge and context awareness
+
+Try asking me: *"What are the top sellers?"* or *"I have 1000 units to distribute"*
+                    </div>
+                    <div class="timestamp">System initialized</div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask me anything about your warehouse operations..."
+                        rows="1"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" onclick="sendUserMessage()">
+                        ➤
+                    </button>
+                </div>
+                
+                <div class="suggestions">
+                    <div class="suggestion-chip" onclick="sendMessage('Show inventory overview')">📊 Inventory Overview</div>
+                    <div class="suggestion-chip" onclick="sendMessage('Mumbai performance analysis')">🏙️ City Analysis</div>
+                    <div class="suggestion-chip" onclick="sendMessage('Product 561099 details')">🔍 Product Details</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isProcessing = false;
+        let currentStream = null;
+
+        // Initialize the chat interface
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            // Auto-resize textarea
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // Send message on Enter (but not Shift+Enter)
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendUserMessage();
+                }
+            });
+        });
+
+        function sendMessage(message) {
+            document.getElementById('chatInput').value = message;
+            sendUserMessage();
+        }
+
+        async function sendUserMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message || isProcessing) return;
+            
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            
+            // Set processing state
+            setProcessingState(true);
+            
+            try {
+                // Send message to backend
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.request_id) {
+                    // Start streaming response
+                    streamResponse(data.request_id);
+                } else {
+                    throw new Error(data.error || 'Failed to process request');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`❌ Error: ${error.message}`, 'assistant');
+                setProcessingState(false);
+            }
+        }
+
+        function streamResponse(requestId) {
+            console.log('Starting stream for request:', requestId);
+            const eventSource = new EventSource(`/api/stream/${requestId}`);
+            let assistantMessage = '';
+            let messageElement = null;
+            
+            eventSource.onopen = function() {
+                console.log('EventSource connection opened');
+            };
+            
+            eventSource.onmessage = function(event) {
+                console.log('Received stream data:', event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'content') {
+                        assistantMessage += data.data;
+                        
+                        if (!messageElement) {
+                            messageElement = addMessage('', 'assistant', false);
+                        }
+                        
+                        updateMessageContent(messageElement, assistantMessage);
+                        
+                    } else if (data.type === 'done') {
+                        console.log('Stream completed successfully');
+                        eventSource.close();
+                        setProcessingState(false);
+                        updateMessageTimestamp(messageElement);
+                        
+                    } else if (data.type === 'error') {
+                        console.error('Stream error received:', data.message);
+                        eventSource.close();
+                        addMessage(`❌ Error: ${data.message}`, 'assistant');
+                        setProcessingState(false);
+                        
+                    } else if (data.type === 'timeout') {
+                        console.warn('Stream timeout');
+                        eventSource.close();
+                        addMessage('⏱️ Request timed out. Please try again.', 'assistant');
+                        setProcessingState(false);
+                    }
+                } catch (e) {
+                    console.error('Error parsing stream data:', e, 'Raw data:', event.data);
+                }
+            };
+            
+            eventSource.onerror = function(event) {
+                console.error('EventSource error:', event);
+                eventSource.close();
+                if (!messageElement) {
+                    addMessage('❌ Connection error. Please try again.', 'assistant');
+                }
+                setProcessingState(false);
+            };
+        }
+
+        function addMessage(content, sender, autoScroll = true) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            messageDiv.appendChild(contentDiv);
+            
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'timestamp';
+            timestampDiv.textContent = new Date().toLocaleTimeString();
+            messageDiv.appendChild(timestampDiv);
+            
+            chatMessages.appendChild(messageDiv);
+            
+            if (autoScroll) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            return messageDiv;
+        }
+
+        function updateMessageContent(messageElement, content) {
+            const contentDiv = messageElement.querySelector('.message-content');
+            
+            // Simple approach - just display as formatted text
+            contentDiv.style.whiteSpace = 'pre-wrap';
+            contentDiv.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace';
+            contentDiv.style.fontSize = '14px';
+            contentDiv.style.lineHeight = '1.4';
+            contentDiv.textContent = content;
+            
+            // Auto-scroll to bottom
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function convertASCIIToHTML(content) {
+            // Enhanced ASCII to HTML conversion with better table parsing
+            let html = content;
+            
+            // Fix corrupted emojis first
+            html = html.replace(/� Good/g, '🟢 Good');
+            
+            // Convert headers with === to styled divs
+            html = html.replace(/={40,}/g, '<div style="border-top: 3px solid #007bff; margin: 20px 0;"></div>');
+            
+            // Convert **HEADERS** to styled headers
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #007bff; font-size: 16px;">$1</strong>');
+            
+            // Better table detection and conversion
+            if (html.includes('┌') && html.includes('│')) {
+                const lines = html.split('\n');
+                let result = '';
+                let currentTable = '';
+                let inTable = false;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    
+                    // Check if this line contains table borders
+                    if (line.includes('┌') || line.includes('├') || line.includes('└')) {
+                        if (line.includes('┌')) {
+                            inTable = true;
+                            currentTable = '';
+                        } else if (line.includes('└')) {
+                            // End of table - convert accumulated table content
+                            if (currentTable) {
+                                result += convertTableToHTML(currentTable);
+                                currentTable = '';
+                            }
+                            inTable = false;
+                        }
+                        continue;
+                    }
+                    
+                    // If we're in a table and this line contains data
+                    if (inTable && line.includes('│')) {
+                        currentTable += line + '\n';
+                    } else if (!inTable) {
+                        // Regular content outside tables
+                        result += line + '\n';
+                    }
+                }
+                
+                // Handle any remaining table content
+                if (currentTable) {
+                    result += convertTableToHTML(currentTable);
+                }
+                
+                html = result;
+            }
+            
+            // Convert bullet points
+            html = html.replace(/^• (.*?)$/gm, '<div style="margin: 5px 0; padding-left: 20px;">• $1</div>');
+            
+            // Convert line breaks to HTML
+            html = html.replace(/\n\n+/g, '<br><br>');
+            html = html.replace(/\n/g, '<br>');
+            
+            // Wrap in a styled container
+            return `<div style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333;">${html}</div>`;
+        }
+        
+        function convertTableToHTML(tableContent) {
+            const lines = tableContent.trim().split('\n');
+            if (lines.length === 0) return '';
+            
+            let tableHTML = '<table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">';
+            
+            let isFirstDataRow = true;
+            
+            for (let line of lines) {
+                if (line.includes('│')) {
+                    // Split by │ and clean up cells
+                    const cells = line.split('│').filter(cell => cell.trim() !== '');
+                    
+                    if (cells.length > 0) {
+                        let rowStyle = '';
+                        let cellTag = 'td';
+                        
+                        // Determine if this is a header row
+                        if (isFirstDataRow) {
+                            rowStyle = 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;';
+                            cellTag = 'th';
+                            isFirstDataRow = false;
+                        } else {
+                            // Alternate row colors
+                            rowStyle = 'background: #f8f9fa;';
+                        }
+                        
+                        tableHTML += `<tr style="${rowStyle}">`;
+                        
+                        cells.forEach((cell, index) => {
+                            let cellContent = cell.trim();
+                            let cellStyle = 'padding: 12px 15px; border-bottom: 1px solid #dee2e6;';
+                            
+                            // Color code status cells
+                            if (cellContent.includes('🔴') || cellContent.includes('Critical')) {
+                                cellStyle += ' background: #f8d7da !important; color: #721c24; font-weight: bold;';
+                            } else if (cellContent.includes('🟡') || cellContent.includes('Low')) {
+                                cellStyle += ' background: #fff3cd !important; color: #856404; font-weight: bold;';
+                            } else if (cellContent.includes('🟢') || cellContent.includes('Good')) {
+                                cellStyle += ' background: #d4edda !important; color: #155724; font-weight: bold;';
+                            }
+                            
+                            // Right align numeric columns (except first column)
+                            if (index > 0 && (cellContent.match(/^\d/) || cellContent.includes('units') || cellContent.includes('$'))) {
+                                cellStyle += ' text-align: right;';
+                            }
+                            
+                            if (cellTag === 'th') {
+                                cellStyle += ' font-weight: bold; text-align: left;';
+                            }
+                            
+                            tableHTML += `<${cellTag} style="${cellStyle}">${cellContent}</${cellTag}>`;
+                        });
+                        
+                        tableHTML += '</tr>';
+                    }
+                }
+            }
+            
+            tableHTML += '</table>';
+            return tableHTML;
+        }
+
+        function updateMessageTimestamp(messageElement) {
+            const timestampDiv = messageElement.querySelector('.timestamp');
+            timestampDiv.textContent = new Date().toLocaleTimeString();
+        }
+
+        function setProcessingState(processing) {
+            isProcessing = processing;
+            const sendBtn = document.getElementById('sendBtn');
+            const processingIndicator = document.getElementById('processingIndicator');
+            const typingIndicator = document.getElementById('typingIndicator');
+            
+            sendBtn.disabled = processing;
+            
+            if (processing) {
+                processingIndicator.classList.add('active');
+                typingIndicator.classList.add('active');
+            } else {
+                processingIndicator.classList.remove('active');
+                typingIndicator.classList.remove('active');
+            }
+        }
+
+        // Update system status periodically
+        setInterval(async function() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                document.getElementById('queue-status').textContent = 
+                    data.queue_size > 0 ? `${data.queue_size} queued` : 'Ready';
+                    
+            } catch (error) {
+                console.error('Health check failed:', error);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

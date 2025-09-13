@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Quick Commerce AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="fas fa-tachometer-alt me-3"></i>
+            Quick Commerce Dashboard
+        </h1>
+        <p class="lead text-muted">Real-time insights and predictions for your commerce operations</p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-2x text-primary mb-3"></i>
+                <h3 class="card-title text-primary">{{ "{:,}".format(total_sales_7d) }}</h3>
+                <p class="card-text text-muted">Units Sold (7 Days)</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x text-success mb-3"></i>
+                <h3 class="card-title text-success">₹{{ "{:,.0f}".format(total_gmv_7d) }}</h3>
+                <p class="card-text text-muted">Total GMV (7 Days)</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-map-marker-alt fa-2x text-info mb-3"></i>
+                <h3 class="card-title text-info">{{ total_cities }}</h3>
+                <p class="card-text text-muted">Active Cities</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                <h3 class="card-title text-warning">{{ total_alerts }}</h3>
+                <p class="card-text text-muted">Active Alerts</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <div id="cityChart"></div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <div id="productChart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Tables Row -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-trophy me-2"></i>
+                    Top Products (Last 7 Days)
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if top_products %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Product Name</th>
+                                <th>City</th>
+                                <th>Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td><span class="badge bg-primary">{{ product.product_id }}</span></td>
+                                <td>{{ product.product_name[:40] }}...</td>
+                                <td>{{ product.city_name }}</td>
+                                <td><strong>{{ product.total_sales }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No product data available
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>
+                    Recent Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_alerts %}
+                {% for alert in recent_alerts %}
+                <div class="alert alert-{{ 'danger' if alert.severity == 'HIGH' else 'warning' if alert.severity == 'MEDIUM' else 'info' }} mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ alert.alert_type }}</strong><br>
+                            <small>{{ alert.message }}</small>
+                        </div>
+                        <span class="badge bg-{{ 'danger' if alert.severity == 'HIGH' else 'warning' if alert.severity == 'MEDIUM' else 'info' }}">
+                            {{ alert.severity }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    No active alerts - All systems running smoothly!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{{ url_for('predict_page') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-crystal-ball me-2"></i>
+                            Make Prediction
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{{ url_for('allocation_page') }}" class="btn btn-success w-100">
+                            <i class="fas fa-boxes me-2"></i>
+                            Allocate Inventory
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{{ url_for('analytics') }}" class="btn btn-info w-100">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            View Analytics
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <button class="btn btn-warning w-100" onclick="refreshData()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Refresh Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Render charts
+    $(document).ready(function() {
+        // City performance chart
+        var cityData = {{ city_chart|safe }};
+        if (cityData && Object.keys(cityData).length > 0) {
+            Plotly.newPlot('cityChart', cityData.data, cityData.layout, {responsive: true});
+        }
+        
+        // Product performance chart
+        var productData = {{ product_chart|safe }};
+        if (productData && Object.keys(productData).length > 0) {
+            Plotly.newPlot('productChart', productData.data, productData.layout, {responsive: true});
+        }
+    });
+    
+    function refreshData() {
+        location.reload();
+    }
+    
+    // Auto-refresh every 5 minutes
+    setInterval(function() {
+        refreshData();
+    }, 300000);
+</script>
+{% endblock %}

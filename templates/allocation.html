@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Allocation - Quick Commerce AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="fas fa-boxes me-3"></i>
+            Inventory Allocation
+        </h1>
+        <p class="lead text-muted">Optimize inventory distribution across cities based on demand patterns</p>
+    </div>
+</div>
+
+<!-- Allocation Form -->
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Calculate Optimal Allocation
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="allocationForm">
+                    <div class="mb-3">
+                        <label for="productSelectAlloc" class="form-label">Select Product</label>
+                        <select class="form-select" id="productSelectAlloc" required>
+                            <option value="">Choose a product...</option>
+                            {% for product in products %}
+                            <option value="{{ product.product_id }}">
+                                {{ product.product_id }} - {{ product.product_name[:60] }}...
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="totalUnits" class="form-label">Total Units to Allocate</label>
+                        <input type="number" class="form-control" id="totalUnits" required min="1" 
+                               placeholder="Enter total units available for allocation">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-cogs me-2"></i>
+                        Calculate Allocation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" id="allocationResults" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Allocation Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="allocationContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Calculating Optimal Allocation...</h5>
+                <p class="text-muted">Analyzing historical data and demand patterns</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#allocationForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            product_id: $('#productSelectAlloc').val(),
+            total_units: parseInt($('#totalUnits').val())
+        };
+        
+        if (!formData.product_id || !formData.total_units) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        showLoading();
+        
+        $.ajax({
+            url: '/api/allocation',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                hideLoading();
+                displayAllocationResult(response);
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+                alert('Error: ' + error);
+            }
+        });
+    });
+});
+
+function showLoading() {
+    $('#loadingModal').modal('show');
+}
+
+function hideLoading() {
+    $('#loadingModal').modal('hide');
+}
+
+function displayAllocationResult(result) {
+    if (result.error) {
+        $('#allocationContent').html(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error: ${result.error}
+            </div>
+        `);
+        $('#allocationResults').show();
+        return;
+    }
+    
+    // Summary section
+    let html = `
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-primary">Product ID</h5>
+                        <h3>${result.product_id}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-success">Total Units</h5>
+                        <h3>${result.total_units_to_allocate.toLocaleString()}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-info">Strategy</h5>
+                        <p class="mb-0">7-Day Sales Based</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h6 class="mb-3">
+            <i class="fas fa-list me-2"></i>
+            Allocation Breakdown by City
+        </h6>
+        
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>City</th>
+                        <th>Allocated Units</th>
+                        <th>Sales %</th>
+                        <th>Recent Sales (7d)</th>
+                        <th>Current Stock</th>
+                        <th>Tomorrow's Demand</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    // Sort allocations by allocated units (descending)
+    result.allocations.sort((a, b) => b.allocated_units - a.allocated_units);
+    
+    result.allocations.forEach(function(allocation) {
+        const priorityClass = allocation.priority === 'HIGH' ? 'danger' : 
+                             allocation.priority === 'MEDIUM' ? 'warning' : 'info';
+        
+        html += `
+            <tr>
+                <td><strong>${allocation.city_name}</strong></td>
+                <td><span class="badge bg-primary fs-6">${allocation.allocated_units}</span></td>
+                <td>${allocation.sales_percentage}%</td>
+                <td>${allocation.recent_7day_sales}</td>
+                <td>${allocation.current_stock}</td>
+                <td>${allocation.predicted_demand_tomorrow}</td>
+                <td><span class="badge bg-${priorityClass}">${allocation.priority}</span></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Key Insights</h6>
+                    <ul class="mb-0">
+                        <li>Top 3 cities receive ${((result.allocations.slice(0,3).reduce((sum, a) => sum + a.allocated_units, 0) / result.total_units_to_allocate) * 100).toFixed(1)}% of inventory</li>
+                        <li>Allocation based on 7-day sales performance</li>
+                        <li>Consider current stock levels for final decisions</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Recommendations</h6>
+                    <ul class="mb-0">
+                        <li>Prioritize HIGH priority cities first</li>
+                        <li>Monitor tomorrow's predicted demand</li>
+                        <li>Adjust for local market conditions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <button class="btn btn-outline-primary" onclick="exportAllocation()">
+                <i class="fas fa-download me-2"></i>
+                Export Allocation Plan
+            </button>
+            <button class="btn btn-outline-success ms-2" onclick="executeAllocation()">
+                <i class="fas fa-play me-2"></i>
+                Execute Allocation
+            </button>
+        </div>
+    `;
+    
+    $('#allocationContent').html(html);
+    $('#allocationResults').show();
+    
+    // Scroll to results
+    $('html, body').animate({
+        scrollTop: $('#allocationResults').offset().top - 100
+    }, 1000);
+}
+
+function exportAllocation() {
+    alert('Export functionality would download allocation plan as CSV/Excel file');
+}
+
+function executeAllocation() {
+    if (confirm('Are you sure you want to execute this allocation plan? This will trigger warehouse notifications.')) {
+        alert('Allocation executed! Warehouse teams have been notified.');
+    }
+}
+</script>
+{% endblock %}

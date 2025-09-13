@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Predictions - Quick Commerce AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="fas fa-crystal-ball me-3"></i>
+            Demand Predictions
+        </h1>
+        <p class="lead text-muted">Predict future demand for products across cities</p>
+    </div>
+</div>
+
+<!-- Prediction Forms -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-box me-2"></i>
+                    Product Demand Prediction
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="productPredictionForm">
+                    <div class="mb-3">
+                        <label for="productSelect" class="form-label">Select Product</label>
+                        <select class="form-select" id="productSelect" required>
+                            <option value="">Choose a product...</option>
+                            {% for product in products %}
+                            <option value="{{ product.product_id }}">
+                                {{ product.product_id }} - {{ product.product_name[:50] }}...
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="citySelect" class="form-label">Select City</label>
+                        <select class="form-select" id="citySelect" required>
+                            <option value="">Choose a city...</option>
+                            {% for city in cities %}
+                            <option value="{{ city }}">{{ city }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="daysAhead" class="form-label">Days Ahead</label>
+                            <input type="number" class="form-control" id="daysAhead" value="1" min="1" max="30">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="stockQuantity" class="form-label">Current Stock (Optional)</label>
+                            <input type="number" class="form-control" id="stockQuantity" min="0">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-magic me-2"></i>
+                        Predict Demand
+                    </button>
+                </form>
+                
+                <div id="productPredictionResult" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-city me-2"></i>
+                    City-wide Demand Prediction
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="cityPredictionForm">
+                    <div class="mb-3">
+                        <label for="citySelectWide" class="form-label">Select City</label>
+                        <select class="form-select" id="citySelectWide" required>
+                            <option value="">Choose a city...</option>
+                            {% for city in cities %}
+                            <option value="{{ city }}">{{ city }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="daysAheadWide" class="form-label">Days Ahead</label>
+                            <input type="number" class="form-control" id="daysAheadWide" value="1" min="1" max="30">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="topProducts" class="form-label">Top Products</label>
+                            <input type="number" class="form-control" id="topProducts" value="10" min="1" max="20">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-chart-area me-2"></i>
+                        Predict City Demand
+                    </button>
+                </form>
+                
+                <div id="cityPredictionResult" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card" id="resultsCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Prediction Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="detailedResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Generating Prediction...</h5>
+                <p class="text-muted">Please wait while our AI analyzes the data</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Product prediction form
+    $('#productPredictionForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            product_id: $('#productSelect').val(),
+            city_name: $('#citySelect').val(),
+            days_ahead: $('#daysAhead').val(),
+            stock_quantity: $('#stockQuantity').val() || null
+        };
+        
+        if (!formData.product_id || !formData.city_name) {
+            alert('Please select both product and city');
+            return;
+        }
+        
+        showLoading();
+        
+        $.ajax({
+            url: '/api/predict',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                hideLoading();
+                displayProductResult(response);
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+                alert('Error: ' + error);
+            }
+        });
+    });
+    
+    // City prediction form
+    $('#cityPredictionForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            city_name: $('#citySelectWide').val(),
+            days_ahead: $('#daysAheadWide').val(),
+            top_products: $('#topProducts').val()
+        };
+        
+        if (!formData.city_name) {
+            alert('Please select a city');
+            return;
+        }
+        
+        showLoading();
+        
+        $.ajax({
+            url: '/api/city_predict',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                hideLoading();
+                displayCityResult(response);
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+                alert('Error: ' + error);
+            }
+        });
+    });
+});
+
+function showLoading() {
+    $('#loadingModal').modal('show');
+}
+
+function hideLoading() {
+    $('#loadingModal').modal('hide');
+}
+
+function displayProductResult(result) {
+    if (result.error) {
+        $('#productPredictionResult').html(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error: ${result.error}
+            </div>
+        `).show();
+        return;
+    }
+    
+    const alertClass = result.stock_days_remaining < 3 ? 'danger' : 
+                      result.stock_days_remaining < 7 ? 'warning' : 'success';
+    
+    $('#productPredictionResult').html(`
+        <div class="alert alert-${alertClass}">
+            <h6><i class="fas fa-info-circle me-2"></i>Prediction Result</h6>
+            <p><strong>Product:</strong> ${result.product_id}</p>
+            <p><strong>City:</strong> ${result.city_name}</p>
+            <p><strong>Predicted Demand:</strong> ${result.predicted_demand} units</p>
+            <p><strong>Current Stock:</strong> ${result.current_stock} units</p>
+            <p><strong>Stock Days Remaining:</strong> ${result.stock_days_remaining} days</p>
+            ${result.alert ? `<p class="mb-0"><strong>Alert:</strong> ${result.alert}</p>` : ''}
+        </div>
+    `).show();
+    
+    showResultsCard();
+}
+
+function displayCityResult(result) {
+    if (result.error) {
+        $('#cityPredictionResult').html(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error: ${result.error}
+            </div>
+        `).show();
+        return;
+    }
+    
+    let html = `
+        <div class="alert alert-info">
+            <h6><i class="fas fa-city me-2"></i>City Prediction Result</h6>
+            <p><strong>City:</strong> ${result.city_name}</p>
+            <p><strong>Total Predicted Demand:</strong> ${result.total_predicted_demand} units</p>
+            <p><strong>Prediction Date:</strong> ${result.prediction_date}</p>
+        </div>
+        
+        <h6>Top Products Breakdown:</h6>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Product ID</th>
+                        <th>Predicted Demand</th>
+                        <th>Current Stock</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    result.product_predictions.forEach(function(pred) {
+        const statusClass = pred.stock_days_remaining < 3 ? 'danger' : 
+                           pred.stock_days_remaining < 7 ? 'warning' : 'success';
+        html += `
+            <tr>
+                <td>${pred.product_id}</td>
+                <td>${pred.predicted_demand}</td>
+                <td>${pred.current_stock}</td>
+                <td><span class="badge bg-${statusClass}">${pred.stock_days_remaining} days</span></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    $('#cityPredictionResult').html(html).show();
+    showResultsCard();
+}
+
+function showResultsCard() {
+    $('#resultsCard').show();
+    $('html, body').animate({
+        scrollTop: $('#resultsCard').offset().top - 100
+    }, 1000);
+}
+</script>
+{% endblock %}
